@@ -46,3 +46,4 @@ export function getOutletIdFromStorage(): string | undefined {
   
   return undefined
 }
+
