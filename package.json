@@ -6,9 +6,19 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start"
+    "start": "next start",
+    "mobile:build": "next build && npx cap sync",
+    "mobile:dev": "next dev --hostname 0.0.0.0",
+    "mobile:sync": "npx cap sync",
+    "mobile:run:android": "npx cap run android",
+    "mobile:open:android": "npx cap open android",
+    "android:build": "cd android && ./gradlew assembleDebug",
+    "android:build:release": "cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
     "@fastify/static": "latest",
     "@google-cloud/spanner": "latest",
     "@hookform/resolvers": "^3.10.0",
