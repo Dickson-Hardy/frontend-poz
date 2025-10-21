@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner"
 import { TokenSync } from "@/components/auth/token-sync"
 import { SessionExpiryWarning } from "@/components/auth/session-expiry-warning"
 import { AuthRecovery } from "@/components/auth/auth-recovery"
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration"
 import "./globals.css"
 
 const playfairDisplay = Playfair_Display({
@@ -83,6 +84,7 @@ export default function RootLayout({
                 <ShiftProvider>
                   <RealTimeProvider>
                   <NetworkStatus />
+                  <ServiceWorkerRegistration />
                   <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
                     <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
                   </div>}>
@@ -96,6 +98,7 @@ export default function RootLayout({
           </ErrorProvider>
         </ErrorBoundary>
         <Analytics />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   )

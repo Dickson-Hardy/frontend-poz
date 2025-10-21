@@ -18,6 +18,7 @@ import { useProductMutations } from "@/hooks/use-products"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient, Product, CreateProductDto, PackVariant } from "@/lib/api-unified"
 import { useAuth } from "@/contexts/auth-context"
+import { utils } from "@/lib/data-utils"
 
 // Form state interface for the UI
 interface ProductFormState {
@@ -79,6 +80,9 @@ export function ProductManagement() {
   const { createProduct, updateProduct, deleteProduct } = useProductMutations()
   const { toast } = useToast()
 
+  // Validation state
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
+
   // Local fetch of products
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -123,6 +127,46 @@ export function ProductManagement() {
     }
     
     return errors
+  }
+
+  // Barcode validation
+  const validateBarcodeField = (barcode: string): string | null => {
+    if (!barcode.trim()) return null // Optional field
+    
+    if (!/^\d{8,13}$/.test(barcode)) {
+      return 'Barcode must be 8-13 digits'
+    }
+    
+    if (barcode.length === 13 && !utils.validateBarcode(barcode)) {
+      return 'Invalid barcode check digit'
+    }
+    
+    return null
+  }
+
+  // Handle barcode input with validation
+  const handleBarcodeChange = (value: string, isEdit: boolean = false) => {
+    const error = validateBarcodeField(value)
+    
+    if (isEdit && editingProduct) {
+      setEditingProduct({...editingProduct, barcode: value})
+    } else {
+      setNewProduct({...newProduct, barcode: value})
+    }
+    
+    setValidationErrors(prev => ({
+      ...prev,
+      [isEdit ? 'editBarcode' : 'barcode']: error || ''
+    }))
+  }
+
+  // Auto-generate barcode
+  const generateBarcode = (isEdit: boolean = false) => {
+    // Generate a random 12-digit base for EAN-13
+    const base = Math.floor(Math.random() * 900000000000) + 100000000000
+    const barcode = base.toString() + utils.generateBarcodeCheckDigit(base.toString())
+    
+    handleBarcodeChange(barcode, isEdit)
   }
 
   // Pack-based product editing functions (simplified)
@@ -228,6 +272,7 @@ export function ProductManagement() {
 
       await createProduct.mutate(payload as any)
       setIsAddDialogOpen(false)
+      setValidationErrors({})
       setNewProduct({
         name: '',
         description: '',
@@ -273,6 +318,7 @@ export function ProductManagement() {
       await updateProduct.mutate(editingProduct.id, editingProduct)
       setIsEditDialogOpen(false)
       setEditingProduct(null)
+      setValidationErrors({})
       toast({ title: "Success", description: "Product updated successfully" })
       fetchProducts()
     } catch (error: any) {
@@ -511,12 +557,27 @@ export function ProductManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="barcode">Barcode</Label>
-                    <Input
-                      id="barcode"
-                      value={newProduct.barcode}
-                      onChange={(e) => setNewProduct({...newProduct, barcode: e.target.value})}
-                      placeholder="Product barcode"
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        id="barcode"
+                        value={newProduct.barcode}
+                        onChange={(e) => handleBarcodeChange(e.target.value)}
+                        placeholder="Product barcode (8-13 digits)"
+                        className={validationErrors.barcode ? 'border-red-500' : ''}
+                      />
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => generateBarcode()}
+                        title="Auto-generate barcode"
+                      >
+                        Generate
+                      </Button>
+                    </div>
+                    {validationErrors.barcode && (
+                      <p className="text-sm text-red-600">{validationErrors.barcode}</p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -885,11 +946,26 @@ export function ProductManagement() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="editBarcode">Barcode</Label>
-                  <Input
-                    id="editBarcode"
-                    value={(editingProduct as any).barcode || ''}
-                    onChange={(e) => setEditingProduct({...editingProduct, barcode: e.target.value})}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="editBarcode"
+                      value={(editingProduct as any).barcode || ''}
+                      onChange={(e) => handleBarcodeChange(e.target.value, true)}
+                      className={validationErrors.editBarcode ? 'border-red-500' : ''}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => generateBarcode(true)}
+                      title="Auto-generate barcode"
+                    >
+                      Generate
+                    </Button>
+                  </div>
+                  {validationErrors.editBarcode && (
+                    <p className="text-sm text-red-600">{validationErrors.editBarcode}</p>
+                  )}
                 </div>
               </div>
               <div className="space-y-2">

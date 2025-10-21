@@ -73,48 +73,31 @@ export interface Product {
   manufacturer?: string
   requiresPrescription: boolean
   isActive: boolean
-  minStockLevel?: number | undefined
+  minStockLevel?: number
   expiryDate?: string
   outletId: string
   packVariants?: PackVariant[] // multiple pack options for this product
   allowUnitSale: boolean // whether individual units can be sold
   createdAt: Date
   updatedAt: Date
-  // Backend field names for compatibility
-  sku?: string
-  genericName?: string
-  strength?: string
-  unitOfMeasure?: string
-  costPrice?: number
-  sellingPrice?: number
-  stockQuantity?: number
-  reorderLevel?: number
-  maxStockLevel?: number
 }
 
 export interface CreateProductDto {
   name: string
-  sku: string
+  description?: string
   barcode?: string
-  description: string
+  price: number
+  cost: number
+  unit: string
   category: string
-  manufacturer: string
-  genericName: string
-  strength: string
-  unitOfMeasure: string
-  costPrice: number
-  sellingPrice: number
-  stockQuantity: number
-  reorderLevel: number
-  maxStockLevel: number
-  image?: string
+  manufacturer?: string
   requiresPrescription: boolean
-  activeIngredients?: string[]
-  dosageInstructions?: string
-  storageInstructions?: string
+  isActive?: boolean
+  minStockLevel?: number
+  expiryDate?: string
   outletId: string
-  allowUnitSale?: boolean
   packVariants?: PackVariant[]
+  allowUnitSale?: boolean
 }
 
 export interface UpdateProductDto extends Partial<CreateProductDto> {}
@@ -157,28 +140,18 @@ export interface SaleItem {
 }
 
 export interface CreateSaleDto {
-  outletId: string
-  cashierId: string
+  customerId?: string
   items: {
     productId: string
-    productName: string
     quantity: number
     unitPrice: number
-    totalPrice: number
-    batchNumber?: string
     discount?: number
+    batchId?: string
     packInfo?: SalePackInfo
   }[]
-  subtotal: number
   discount?: number
-  tax?: number
-  total: number
   paymentMethod: PaymentMethod
-  customerName?: string
-  customerPhone?: string
-  prescriptionNumber?: string
-  doctorName?: string
-  notes?: string
+  outletId: string
 }
 
 export type PaymentMethod = 'cash' | 'card' | 'mobile' | 'insurance'
@@ -194,10 +167,6 @@ export interface InventoryItem {
   reorderPoint: number
   outletId: string
   lastUpdated: Date
-  // Backend field names for compatibility
-  stockQuantity?: number
-  reorderLevel?: number
-  maxStockLevel?: number
 }
 
 export interface InventoryStats {
@@ -209,12 +178,10 @@ export interface InventoryStats {
 
 export interface InventoryAdjustment {
   productId: string
-  outletId: string
-  adjustedQuantity: number
+  quantity: number
   reason: string
-  adjustedBy: string
-  notes?: string
-  type: 'increase' | 'decrease' | 'damage' | 'expired' | 'return' | 'recount'
+  type: 'increase' | 'decrease'
+  outletId: string
 }
 
 export interface Batch {
@@ -560,25 +527,19 @@ export interface Shift {
   id: string
   cashierId: string
   cashier: User
-  startTime: string
-  endTime?: string
+  startTime: Date
+  endTime?: Date
   openingBalance: number
   closingBalance?: number
   totalSales: number
-  totalExpenses: number
-  netAmount: number
   status: 'active' | 'closed'
   outletId: string
-  createdAt: string
-  updatedAt: string
 }
 
 export interface StartShiftDto {
+  cashierId: string
   openingBalance: number
-  notes?: string
-  // Optional on client; backend ignores/forbids these in body
-  cashierId?: string
-  outletId?: string
+  outletId: string
 }
 
 export interface EndShiftDto {
@@ -1265,9 +1226,9 @@ class UnifiedApiClient {
 
   // Inventory methods
   inventory = {
-    getItems: async (outletId?: string): Promise<Product[]> => {
+    getItems: async (outletId?: string): Promise<InventoryItem[]> => {
       const params = outletId ? { outletId } : {}
-      const response = await this.axiosInstance.get<Product[]>('/inventory/items', { params })
+      const response = await this.axiosInstance.get<InventoryItem[]>('/inventory/items', { params })
       return response.data
     },
 
@@ -1281,62 +1242,10 @@ class UnifiedApiClient {
       await this.axiosInstance.post('/inventory/adjust', adjustment)
     },
 
-    // Items
-    updateItem: async (productId: string, data: { reorderLevel?: number; maxStockLevel?: number }) => {
-      const response = await this.axiosInstance.patch(`/inventory/items/${productId}`, data)
-      return response.data
-    },
-
-    // Batches
-    getBatches: async (outletId?: string, productId?: string): Promise<Batch[]> => {
-      const params: any = {}
-      if (outletId) params.outletId = outletId
-      if (productId) params.productId = productId
+    getBatches: async (outletId?: string): Promise<Batch[]> => {
+      const params = outletId ? { outletId } : {}
       const response = await this.axiosInstance.get<Batch[]>('/inventory/batches', { params })
       return response.data
-    },
-
-    getBatchById: async (id: string): Promise<Batch> => {
-      const response = await this.axiosInstance.get<Batch>(`/inventory/batches/${id}`)
-      return response.data
-    },
-
-    createBatch: async (data: {
-      batchNumber: string
-      productId: string
-      outletId: string
-      manufacturingDate: string
-      expiryDate: string
-      quantity: number
-      costPrice: number
-      sellingPrice: number
-      supplierName?: string
-      supplierInvoice?: string
-      notes?: string
-    }): Promise<Batch> => {
-      const response = await this.axiosInstance.post<Batch>('/inventory/batches', data)
-      return response.data
-    },
-
-    updateBatch: async (id: string, data: Partial<{
-      batchNumber: string
-      manufacturingDate: string
-      expiryDate: string
-      quantity: number
-      soldQuantity: number
-      costPrice: number
-      sellingPrice: number
-      status: string
-      supplierName?: string
-      supplierInvoice?: string
-      notes?: string
-    }>): Promise<Batch> => {
-      const response = await this.axiosInstance.patch<Batch>(`/inventory/batches/${id}`, data)
-      return response.data
-    },
-
-    deleteBatch: async (id: string): Promise<void> => {
-      await this.axiosInstance.delete(`/inventory/batches/${id}`)
     },
 
     getAdjustments: async (outletId?: string): Promise<InventoryAdjustment[]> => {
@@ -1489,76 +1398,13 @@ class UnifiedApiClient {
       return response.data
     },
 
-    getCurrent: async (): Promise<Shift | null> => {
-      const response = await this.axiosInstance.get<Shift>('/shifts/current')
-      return response.data
-    },
-
-    getDailyShifts: async (date: string): Promise<Shift[]> => {
-      const response = await this.axiosInstance.get<Shift[]>(`/shifts/daily?date=${date}`)
-      return response.data
-    },
-
-    getDailySummary: async (date: string): Promise<any> => {
-      const response = await this.axiosInstance.get<any>(`/shifts/daily/summary?date=${date}`)
-      return response.data
-    },
-
-    getById: async (id: string): Promise<Shift> => {
-      const response = await this.axiosInstance.get<Shift>(`/shifts/${id}`)
-      return response.data
-    },
-
-    getShiftReport: async (id: string): Promise<any> => {
-      const response = await this.axiosInstance.get<any>(`/shifts/${id}/report`)
-      return response.data
-    },
-
-    getShiftExpenses: async (id: string): Promise<any[]> => {
-      const response = await this.axiosInstance.get<any[]>(`/shifts/${id}/expenses`)
-      return response.data
-    },
-
-    addExpense: async (id: string, data: any): Promise<any> => {
-      const response = await this.axiosInstance.post<any>(`/shifts/${id}/expenses`, data)
-      return response.data
-    },
-
     start: async (data: StartShiftDto): Promise<Shift> => {
-      const response = await this.axiosInstance.post<Shift>('/shifts', data)
+      const response = await this.axiosInstance.post<Shift>('/shifts/start', data)
       return response.data
     },
 
     end: async (id: string, data: EndShiftDto): Promise<Shift> => {
-      const response = await this.axiosInstance.put<Shift>(`/shifts/${id}/end`, data)
-      return response.data
-    },
-
-    handover: async (id: string, data: any): Promise<any> => {
-      const response = await this.axiosInstance.post<any>(`/shifts/${id}/handover`, data)
-      return response.data
-    },
-  }
-
-  // Reconciliation methods
-  reconciliation = {
-    getAll: async (): Promise<any[]> => {
-      const response = await this.axiosInstance.get<any[]>('/reconciliation')
-      return response.data
-    },
-
-    getSummary: async (): Promise<any> => {
-      const response = await this.axiosInstance.get<any>('/reconciliation/summary')
-      return response.data
-    },
-
-    submitDailyCash: async (data: any): Promise<any> => {
-      const response = await this.axiosInstance.post<any>('/reconciliation/daily-cash/submit', data)
-      return response.data
-    },
-
-    completeInventory: async (data: any): Promise<any> => {
-      const response = await this.axiosInstance.post<any>('/reconciliation/inventory/complete', data)
+      const response = await this.axiosInstance.post<Shift>(`/shifts/${id}/end`, data)
       return response.data
     },
   }

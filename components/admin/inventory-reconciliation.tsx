@@ -38,7 +38,6 @@ import {
   Zap
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { apiClient } from "@/lib/api-unified"
 
 interface Product {
   id: string
@@ -95,8 +94,6 @@ interface InventoryReconciliation {
   productsWithVariance: number
   totalVarianceValue: number
   stockRecords: StockRecord[]
-  inventoryItems: any[]
-  variance: number
   shrinkageAnalysis: {
     totalShrinkage: number
     shrinkagePercentage: number
@@ -164,7 +161,8 @@ export function InventoryReconciliation() {
   const loadInventoryData = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Use API client directly
+      // Import API client dynamically
+      const { apiClient } = await import('@/lib/api-unified')
       
       // Fetch actual products from inventory
       try {
@@ -182,33 +180,33 @@ export function InventoryReconciliation() {
         
         // Create products from inventory items
         const products: Product[] = inventoryItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          description: item.description,
-          barcode: item.barcode,
-          price: item.sellingPrice || 0,
-          cost: item.costPrice || 0,
-          unit: item.unitOfMeasure || 'piece',
-          category: item.category,
-          manufacturer: item.manufacturer,
-          requiresPrescription: item.requiresPrescription || false,
-          isActive: item.isActive || true,
-          minStockLevel: item.reorderLevel,
-          expiryDate: item.expiryDate,
-          outletId: item.outletId,
-          allowUnitSale: item.allowUnitSale || true,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt
+          id: item.product.id,
+          name: item.product.name,
+          description: item.product.description,
+          barcode: item.product.barcode || `BAR${item.product.id}`,
+          price: item.product.price,
+          cost: item.product.cost,
+          unit: item.product.unit,
+          category: item.product.category,
+          manufacturer: item.product.manufacturer,
+          requiresPrescription: item.product.requiresPrescription,
+          isActive: item.product.isActive,
+          minStockLevel: item.product.minStockLevel,
+          expiryDate: item.product.expiryDate,
+          outletId: item.product.outletId,
+          allowUnitSale: item.product.allowUnitSale,
+          createdAt: item.product.createdAt,
+          updatedAt: item.product.updatedAt
         }))
         
         // Create stock records based on real inventory data
         const stockRecords: StockRecord[] = products.map(product => {
-          const inventoryItem = inventoryItems.find(item => item.id === product.id)!
+          const inventoryItem = inventoryItems.find(item => item.product.id === product.id)!
           return {
             id: `stock_${product.id}`,
             productId: product.id,
             product: product,
-            systemQuantity: inventoryItem.stockQuantity ?? 0,
+            systemQuantity: inventoryItem.currentStock,
             physicalCount: null, // To be filled during counting
             variance: 0,
             varianceValue: 0,
@@ -229,8 +227,6 @@ export function InventoryReconciliation() {
           productsWithVariance: 0,
           totalVarianceValue: 0,
           stockRecords: stockRecords,
-          inventoryItems: inventoryItems,
-          variance: 0,
           shrinkageAnalysis: {
             totalShrinkage: 0,
             shrinkagePercentage: 0,
@@ -357,12 +353,8 @@ export function InventoryReconciliation() {
 
     setIsLoading(true)
     try {
-      // Complete inventory reconciliation via API using API client
-      await apiClient.reconciliation.completeInventory({
-        reconciliationId: reconciliation.id,
-        inventoryItems: reconciliation.stockRecords,
-        variance: reconciliation.totalVarianceValue
-      })
+      // Mock API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       setReconciliation(prev => prev ? {
         ...prev,
