@@ -15,6 +15,8 @@ import { SalesReports } from "@/components/manager/sales-reports"
 import { ShiftReports } from "@/components/manager/shift-reports"
 import { ReceiptTemplateManagement } from "@/components/admin/receipt-template-management"
 import { ReconciliationDashboard } from "@/components/admin/reconciliation-dashboard"
+import { AdvancedSalesAnalytics } from "@/components/admin/advanced-sales-analytics"
+import { ProductTransfers } from "@/components/admin/product-transfers"
 import { withAuth, useAuth } from "@/contexts/auth-context"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useEffect } from "react"
@@ -26,7 +28,9 @@ type AdminView =
   | "outlets"
   | "products"
   | "inventory"
+  | "transfers"
   | "financial"
+  | "sales-analytics"
   | "shifts"
   | "receipts"
   | "reconciliation"
@@ -90,8 +94,12 @@ function AdminPage() {
         return <ProductManagement />
       case "inventory":
         return <InventoryManagement />
+      case "transfers":
+        return <ProductTransfers />
       case "financial":
         return <SalesReports />
+      case "sales-analytics":
+        return <AdvancedSalesAnalytics />
       case "shifts":
         return <ShiftReports />
       case "receipts":

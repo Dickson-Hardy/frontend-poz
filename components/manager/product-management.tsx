@@ -82,6 +82,9 @@ export function ProductManagement() {
 
   // Validation state
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({})
+  const [outlets, setOutlets] = useState<any[]>([])
+  const [selectedOutlets, setSelectedOutlets] = useState<string[]>([])
+  const [addToMultipleOutlets, setAddToMultipleOutlets] = useState(false)
 
   // Local fetch of products
   const [products, setProducts] = useState<Product[]>([])
@@ -102,8 +105,18 @@ export function ProductManagement() {
     }
   }
 
+  const fetchOutlets = async () => {
+    try {
+      const data = await apiClient.outlets.getAll()
+      setOutlets(data)
+    } catch (e) {
+      console.error('Failed to fetch outlets', e)
+    }
+  }
+
   useEffect(() => {
     fetchProducts()
+    fetchOutlets()
   }, [user?.outletId])
 
   // Pack-based product validation
@@ -188,8 +201,19 @@ export function ProductManagement() {
         return
       }
 
-      // Ensure outletId defaults to current outlet if not set
-      const outletId = newProduct.outletId || user?.outletId || ''
+      // Determine which outlets to add product to
+      const targetOutlets = addToMultipleOutlets && selectedOutlets.length > 0
+        ? selectedOutlets
+        : [newProduct.outletId || user?.outletId || '']
+      
+      if (targetOutlets.length === 0 || targetOutlets.some(id => !id)) {
+        toast({ 
+          title: "Validation Error", 
+          description: "Please select at least one outlet", 
+          variant: "destructive" 
+        })
+        return
+      }
       
       // Generate product name with pack size
       const genericName = newProduct.genericName?.trim() || newProduct.name?.trim() || ''
@@ -247,8 +271,8 @@ export function ProductManagement() {
         return (map[key] || 'pieces')
       }
 
-      // Build payload with exact backend DTO structure
-      const payload = {
+      // Build base payload
+      const basePayload = {
         name: productName,
         sku: generatedSku,
         barcode: newProduct.barcode || '',
@@ -264,15 +288,19 @@ export function ProductManagement() {
         reorderLevel: Math.max(newProduct.minStockLevel || 0, 10),
         maxStockLevel: Math.max((newProduct.minStockLevel || 0) + 100, 100),
         requiresPrescription: !!newProduct.requiresPrescription,
-        outletId: outletId,
         allowUnitSale: newProduct.allowUnitSale !== false,
-        // Remove pack variants - each pack size is now a separate product
-        // packVariants: [],
       }
 
-      await createProduct.mutate(payload as any)
+      // Create product for each selected outlet
+      const creationPromises = targetOutlets.map(outletId => 
+        createProduct.mutate({ ...basePayload, outletId } as any)
+      )
+      
+      await Promise.all(creationPromises)
       setIsAddDialogOpen(false)
       setValidationErrors({})
+      setSelectedOutlets([])
+      setAddToMultipleOutlets(false)
       setNewProduct({
         name: '',
         description: '',
@@ -281,21 +309,23 @@ export function ProductManagement() {
         barcode: '',
         price: undefined as any,
         cost: undefined as any,
-        minStockLevel: undefined as any, // Initial stock quantity - user can input
+        minStockLevel: undefined as any,
         unit: '',
         requiresPrescription: false,
         isActive: true,
         expiryDate: '',
         outletId: '',
         allowUnitSale: true,
-        // Reset new pack-based fields
         packSize: 1,
         genericName: '',
         strength: '',
         form: '',
         brandName: '',
       })
-      toast({ title: "Success", description: "Product created successfully" })
+      toast({ 
+        title: "Success", 
+        description: `Product created successfully in ${targetOutlets.length} outlet${targetOutlets.length > 1 ? 's' : ''}` 
+      })
       fetchProducts()
     } catch (error: any) {
       console.error('Failed to create product:', error)
@@ -422,7 +452,19 @@ export function ProductManagement() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-foreground">Product Management</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Product Management</h1>
+          {user?.outletId && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Viewing: {outlets.find(o => o.id === user.outletId)?.name || 'Current Outlet'}
+            </p>
+          )}
+          {!user?.outletId && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Viewing: All Outlets
+            </p>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={fetchProducts}>
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -580,9 +622,77 @@ export function ProductManagement() {
                     )}
                   </div>
                 </div>
-                <div className="space-y-2">
-              <Label htmlFor="outlet">Outlet *</Label>
-              <Input id="outlet" value={newProduct.outletId || user?.outletId || ''} onChange={(e) => setNewProduct({ ...newProduct, outletId: e.target.value })} placeholder="Outlet ID" />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label>Outlet Selection *</Label>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="multiOutlet"
+                        checked={addToMultipleOutlets}
+                        onCheckedChange={setAddToMultipleOutlets}
+                      />
+                      <Label htmlFor="multiOutlet" className="text-sm font-normal cursor-pointer">
+                        Add to multiple outlets
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  {!addToMultipleOutlets ? (
+                    <Select 
+                      value={newProduct.outletId || user?.outletId || ''} 
+                      onValueChange={(value) => setNewProduct({ ...newProduct, outletId: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select outlet" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {outlets.map(outlet => (
+                          <SelectItem key={outlet.id} value={outlet.id}>
+                            {outlet.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto">
+                        {outlets.map(outlet => (
+                          <div key={outlet.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`outlet-${outlet.id}`}
+                              checked={selectedOutlets.includes(outlet.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedOutlets([...selectedOutlets, outlet.id])
+                                } else {
+                                  setSelectedOutlets(selectedOutlets.filter(id => id !== outlet.id))
+                                }
+                              }}
+                              className="rounded border-gray-300"
+                            />
+                            <Label htmlFor={`outlet-${outlet.id}`} className="font-normal cursor-pointer">
+                              {outlet.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      {selectedOutlets.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          Selected: {selectedOutlets.length} outlet{selectedOutlets.length > 1 ? 's' : ''}
+                        </p>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSelectedOutlets(outlets.map(o => o.id))}
+                        className="w-full"
+                      >
+                        Select All Outlets
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="description">Description (Optional)</Label>

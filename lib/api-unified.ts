@@ -1222,6 +1222,53 @@ class UnifiedApiClient {
       const response = await this.axiosInstance.get<DailySummary>('/sales/daily', { params })
       return response.data
     },
+
+    search: async (query: string, outletId?: string): Promise<Sale[]> => {
+      const params = outletId ? { outletId } : {}
+      const response = await this.axiosInstance.get<Sale[]>(`/sales/search/${query}`, { params })
+      return response.data
+    },
+
+    getHourlySales: async (outletId?: string, date?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (date) params.date = date
+      const response = await this.axiosInstance.get('/sales/analytics/hourly', { params })
+      return response.data
+    },
+
+    getSalesByCategory: async (outletId?: string, startDate?: string, endDate?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (startDate) params.startDate = startDate
+      if (endDate) params.endDate = endDate
+      const response = await this.axiosInstance.get('/sales/analytics/by-category', { params })
+      return response.data
+    },
+
+    getCashierPerformance: async (outletId?: string, startDate?: string, endDate?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (startDate) params.startDate = startDate
+      if (endDate) params.endDate = endDate
+      const response = await this.axiosInstance.get('/sales/analytics/cashier-performance', { params })
+      return response.data
+    },
+
+    getPaymentMethods: async (outletId?: string, startDate?: string, endDate?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (startDate) params.startDate = startDate
+      if (endDate) params.endDate = endDate
+      const response = await this.axiosInstance.get('/sales/analytics/payment-methods', { params })
+      return response.data
+    },
+
+    getSalesComparison: async (outletId?: string): Promise<any> => {
+      const params = outletId ? { outletId } : {}
+      const response = await this.axiosInstance.get('/sales/analytics/comparison', { params })
+      return response.data
+    },
   }
 
   // Inventory methods
@@ -1398,13 +1445,47 @@ class UnifiedApiClient {
       return response.data
     },
 
+    getDailyShifts: async (date: string): Promise<Shift[]> => {
+      const response = await this.axiosInstance.get<Shift[]>('/shifts/daily', {
+        params: { date }
+      })
+      return response.data
+    },
+
+    getDailySummary: async (date: string): Promise<any> => {
+      const response = await this.axiosInstance.get('/shifts/daily/summary', {
+        params: { date }
+      })
+      return response.data
+    },
+
+    getShiftReport: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.get(`/shifts/${id}/report`)
+      return response.data
+    },
+
+    getShiftExpenses: async (id: string): Promise<any[]> => {
+      const response = await this.axiosInstance.get(`/shifts/${id}/expenses`)
+      return response.data
+    },
+
+    addExpense: async (id: string, expense: any): Promise<any> => {
+      const response = await this.axiosInstance.post(`/shifts/${id}/expenses`, expense)
+      return response.data
+    },
+
+    getCurrent: async (): Promise<Shift> => {
+      const response = await this.axiosInstance.get<Shift>('/shifts/current')
+      return response.data
+    },
+
     start: async (data: StartShiftDto): Promise<Shift> => {
-      const response = await this.axiosInstance.post<Shift>('/shifts/start', data)
+      const response = await this.axiosInstance.post<Shift>('/shifts', data)
       return response.data
     },
 
     end: async (id: string, data: EndShiftDto): Promise<Shift> => {
-      const response = await this.axiosInstance.post<Shift>(`/shifts/${id}/end`, data)
+      const response = await this.axiosInstance.put<Shift>(`/shifts/${id}/end`, data)
       return response.data
     },
   }
@@ -1526,6 +1607,128 @@ class UnifiedApiClient {
       } catch (error) {
         throw new Error(`Failed to delete supplier: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
+    },
+  }
+
+  // Supplier Payments methods
+  supplierPayments = {
+    getAll: async (outletId?: string, status?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (status) params.status = status
+      const response = await this.axiosInstance.get('/supplier-payments', { params })
+      return response.data
+    },
+
+    getById: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.get(`/supplier-payments/${id}`)
+      return response.data
+    },
+
+    create: async (payment: any): Promise<any> => {
+      const response = await this.axiosInstance.post('/supplier-payments', payment)
+      return response.data
+    },
+
+    recordPayment: async (id: string, payment: any): Promise<any> => {
+      const response = await this.axiosInstance.post(`/supplier-payments/${id}/record-payment`, payment)
+      return response.data
+    },
+
+    getOverdue: async (outletId?: string): Promise<any[]> => {
+      const params = outletId ? { outletId } : {}
+      const response = await this.axiosInstance.get('/supplier-payments/overdue', { params })
+      return response.data
+    },
+
+    getStats: async (outletId?: string): Promise<any> => {
+      const params = outletId ? { outletId } : {}
+      const response = await this.axiosInstance.get('/supplier-payments/stats', { params })
+      return response.data
+    },
+  }
+
+  // Product Transfers methods
+  productTransfers = {
+    getAll: async (outletId?: string, status?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (status) params.status = status
+      const response = await this.axiosInstance.get('/product-transfers', { params })
+      return response.data
+    },
+
+    getById: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.get(`/product-transfers/${id}`)
+      return response.data
+    },
+
+    create: async (transfer: any): Promise<any> => {
+      const response = await this.axiosInstance.post('/product-transfers', transfer)
+      return response.data
+    },
+
+    approve: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.post(`/product-transfers/${id}/approve`)
+      return response.data
+    },
+
+    complete: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.post(`/product-transfers/${id}/complete`)
+      return response.data
+    },
+
+    cancel: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.post(`/product-transfers/${id}/cancel`)
+      return response.data
+    },
+
+    getStats: async (outletId?: string): Promise<any> => {
+      const params = outletId ? { outletId } : {}
+      const response = await this.axiosInstance.get('/product-transfers/stats', { params })
+      return response.data
+    },
+  }
+
+  // Returns methods
+  returns = {
+    getAll: async (outletId?: string, status?: string): Promise<any[]> => {
+      const params: any = {}
+      if (outletId) params.outletId = outletId
+      if (status) params.status = status
+      const response = await this.axiosInstance.get('/returns', { params })
+      return response.data
+    },
+
+    getById: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.get(`/returns/${id}`)
+      return response.data
+    },
+
+    create: async (returnData: any): Promise<any> => {
+      const response = await this.axiosInstance.post('/returns', returnData)
+      return response.data
+    },
+
+    approve: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.post(`/returns/${id}/approve`)
+      return response.data
+    },
+
+    reject: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.post(`/returns/${id}/reject`)
+      return response.data
+    },
+
+    restock: async (id: string): Promise<any> => {
+      const response = await this.axiosInstance.post(`/returns/${id}/restock`)
+      return response.data
+    },
+
+    getStats: async (outletId?: string): Promise<any> => {
+      const params = outletId ? { outletId } : {}
+      const response = await this.axiosInstance.get('/returns/stats', { params })
+      return response.data
     },
   }
 

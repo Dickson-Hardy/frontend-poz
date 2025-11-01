@@ -13,9 +13,11 @@ import { CustomerPanel } from "@/components/cashier/customer-panel"
 import { DiscountPanel } from "@/components/cashier/discount-panel"
 import { MobileCashierPage } from "@/components/cashier/mobile-pos-page"
 import { CashierDashboard } from "@/components/cashier/cashier-dashboard"
+import { WebSocketStatus } from "@/components/websocket-status"
 import { PackVariant, SalePackInfo } from "@/lib/api-unified"
 import { Button } from "@/components/ui/button"
 import { Monitor, BarChart3 } from "lucide-react"
+import { getOutletId } from "@/lib/user-utils"
 
 export interface CartItem {
   id: string
@@ -140,8 +142,10 @@ function CashierContent() {
         title="Cashier" 
         role="cashier" 
         userName={user ? `${user.firstName} ${user.lastName}` : "Cashier"} 
-        outletName={user?.outlet?.name || "Pharmacy"} 
-      />
+        outletName={user?.outlet?.name || "Pharmacy"}
+      >
+        <WebSocketStatus outletId={getOutletId(user)} />
+      </Header>
 
       {/* View Toggle Buttons */}
       <div className="border-b border-border bg-card">

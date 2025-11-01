@@ -13,6 +13,8 @@ import {
   Clock,
   Receipt,
   Calculator,
+  TrendingUp,
+  ArrowRightLeft,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -23,7 +25,9 @@ type AdminView =
   | "outlets"
   | "products"
   | "inventory"
+  | "transfers"
   | "financial"
+  | "sales-analytics"
   | "shifts"
   | "receipts"
   | "reconciliation"
@@ -41,7 +45,9 @@ const menuItems: { id: AdminView; label: string; icon: any }[] = [
   { id: "outlets", label: "Outlet Management", icon: Building2 },
   { id: "products", label: "Product Management", icon: Package },
   { id: "inventory", label: "Inventory Control", icon: Warehouse },
+  { id: "transfers", label: "Product Transfers", icon: ArrowRightLeft },
   { id: "financial", label: "Financial Reports", icon: DollarSign },
+  { id: "sales-analytics", label: "Sales Analytics", icon: TrendingUp },
   { id: "shifts", label: "Shift Monitoring", icon: Clock },
   { id: "receipts", label: "Receipt Templates", icon: Receipt },
   { id: "reconciliation", label: "Reconciliation", icon: Calculator },

@@ -20,9 +20,10 @@ interface HeaderProps {
   role: "cashier" | "manager" | "admin"
   userName?: string
   outletName?: string
+  children?: React.ReactNode
 }
 
-export function Header({ title, role, userName = "User", outletName = "Main Outlet" }: HeaderProps) {
+export function Header({ title, role, userName = "User", outletName = "Main Outlet", children }: HeaderProps) {
   const { user } = useAuth()
   const { confirmAndLogout } = useLogoutConfirmation()
   
@@ -56,6 +57,8 @@ export function Header({ title, role, userName = "User", outletName = "Main Outl
         </div>
 
         <div className="flex items-center space-x-4">
+          {children}
+          
           <Button variant="ghost" size="sm" className="relative">
             <Bell className="h-4 w-4" />
             <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs">3</Badge>

@@ -13,7 +13,7 @@ import { BarcodeScanner } from "./barcode-scanner"
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner"
 import { apiClient } from "@/lib/api-unified"
 import { getOutletId } from "@/lib/user-utils"
-import { useInventory } from "@/hooks/use-inventory"
+import { useRealtimeInventory } from "@/hooks/use-realtime-data"
 import type { Product } from "@/lib/api-unified"
 
 // Extended product type with inventory information
@@ -47,8 +47,8 @@ export function ProductSearchMobile({ onAddToCart, cartItems = [] }: ProductSear
   const [searchTerm, setSearchTerm] = useState("")
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
   
-  // Use inventory hook for automatic cache invalidation
-  const { items: inventoryItems, loading, error } = useInventory(outletId)
+  // Use real-time inventory hook for automatic updates
+  const { data: inventoryItems, loading, error } = useRealtimeInventory(outletId)
   
   // Convert inventory items to products with stock
   const products: ProductWithStock[] = React.useMemo(() => {

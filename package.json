@@ -105,6 +105,7 @@
     "reflect-metadata": "latest",
     "resend": "latest",
     "rxjs": "latest",
+    "socket.io-client": "^4.8.1",
     "sonner": "^1.7.4",
     "sql.js": "latest",
     "sqlite3": "latest",

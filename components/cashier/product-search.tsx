@@ -16,7 +16,7 @@ import { ProductWithPacks } from "./product-with-packs"
 import { useBarcodeScanner } from "@/hooks/use-barcode-scanner"
 import { apiClient } from "@/lib/api-unified"
 import { getOutletId } from "@/lib/user-utils"
-import { useInventory } from "@/hooks/use-inventory"
+import { useRealtimeInventory } from "@/hooks/use-realtime-data"
 import type { CartItem } from "@/app/cashier/page"
 import type { Product, InventoryItem } from "@/lib/api-unified"
 
@@ -37,8 +37,8 @@ export function ProductSearch({ onAddToCart }: ProductSearchProps) {
   const outletId = getOutletId(user)
   const [searchTerm, setSearchTerm] = useState("")
   
-  // Use inventory hook for automatic cache invalidation
-  const { items: inventoryItems, loading, error } = useInventory(outletId)
+  // Use real-time inventory hook for automatic updates
+  const { data: inventoryItems, loading, error } = useRealtimeInventory(outletId)
   
   // Convert inventory items to products with stock
   const products: ProductWithStock[] = React.useMemo(() => {

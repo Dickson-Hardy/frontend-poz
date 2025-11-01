@@ -27,7 +27,10 @@ import { StartShiftModal } from "@/components/cashier/start-shift-modal"
 import { EndShiftModal } from "@/components/cashier/end-shift-modal"
 import { ExpenseModal } from "@/components/cashier/expense-modal"
 import { MobileReports } from "@/components/cashier/mobile-reports"
+import { WebSocketStatus } from "@/components/websocket-status"
 import { useShift } from "@/contexts/shift-context"
+import { useAuth } from "@/contexts/auth-context"
+import { getOutletId } from "@/lib/user-utils"
 import type { CartItem } from "@/app/cashier/page"
 
 interface Customer {
@@ -57,6 +60,8 @@ export function MobileCashierPage() {
   
   // Shift context
   const { currentShift } = useShift()
+  const { user } = useAuth()
+  const outletId = getOutletId(user)
 
   const addToCart = (product: any) => {
     const existingItem = cartItems.find(item => item.id === product.id)
@@ -178,6 +183,7 @@ export function MobileCashierPage() {
                   <h1 className="text-lg font-semibold">Cashier POS</h1>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <WebSocketStatus outletId={outletId} />
                   <Button variant="ghost" size="sm">
                     <Settings className="h-4 w-4" />
                   </Button>

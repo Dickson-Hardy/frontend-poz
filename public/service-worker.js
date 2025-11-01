@@ -83,8 +83,8 @@ async function networkFirstStrategy(request) {
   try {
     const response = await fetch(request)
     
-    // Cache successful API responses
-    if (request.url.includes('/api/') && response.status === 200) {
+    // Cache successful API responses (skip HEAD requests)
+    if (request.url.includes('/api/') && response.status === 200 && request.method !== 'HEAD') {
       const cache = await caches.open(API_CACHE_NAME)
       cache.put(request, response.clone())
     }
